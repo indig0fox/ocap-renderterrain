@@ -97,6 +97,8 @@ The output data will be in the `output` directory. The output data will be in th
 ### Running
 
     ```docker
+    cd ./ocap-exporter
+
     docker build -t indifox926/ocap-rendermap:latest .
 
     docker run -it --rm --name ocap-rendermap --mount type=bind,src="$(pwd)"/input,target=/app/input --mount type=bind,src="$(pwd)"/output,target=/app/output --mount type=bind,src="$(pwd)"/temp,target=/app/temp indifox926/ocap-rendermap:latest

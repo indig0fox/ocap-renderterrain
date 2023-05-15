@@ -312,7 +312,6 @@ if (isNil "CBA_fnc_encodeJSON") then {
     ((worldSize / _divisor) + 1) should be used for the Width/Height fields in XML
     ";
 
-
     for "_y" from (worldSize - 1) to 0 step (-_terrainGridWidth) do {
         comment '
             hintSilent format ["Row %1/%2", _terrainGridSize - _y, _terrainGridSize];
@@ -346,14 +345,14 @@ if (isNil "CBA_fnc_encodeJSON") then {
         };
         comment "asc";
         _result = OCAP_EXPORTER_ADDON callExtension [
-            "writeLine",
+            "writeAsc",
             [_row joinString " "]
         ];
 
         comment "hint str _result;";
 
         comment 'progressLoadingScreen (_y / _terrainGridSize);';
-        progressLoadingScreen (_y / worldSize);
+        progressLoadingScreen (100 - (_y / worldSize));
     };
 
     comment 'endLoadingScreen;';
@@ -367,4 +366,5 @@ if (isNil "CBA_fnc_encodeJSON") then {
             _metadataJson
         ]
     ];
+
 };

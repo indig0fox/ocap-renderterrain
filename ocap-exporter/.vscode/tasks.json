@@ -1,0 +1,20 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build Extension (DLL)",
+      "type": "shell",
+      "windows": {
+        "command": "$ENV:GOARCH = 'amd64'; $ENV:CGO_ENABLED = 1; go1.16.4 build -o ocap_exporter_x64.dll -buildmode=c-shared ."
+      },
+      "linux": {
+        "command": "export GOARCH='amd64' && export CGO_ENABLED=1 && go1.16.4 build -o ocap_exporter_x64.so -buildmode=c-shared ."
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    }
+  ]
+}
