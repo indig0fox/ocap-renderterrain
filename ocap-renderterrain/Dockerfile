@@ -25,6 +25,8 @@ RUN apt-get update && apt-get install -y \
 RUN apt-get install -y inkscape
 # Install libreoffice
 RUN apt-get install -y libreoffice
+# Install imagemagick
+RUN apt-get install -y imagemagick
 
 # Set up app
 WORKDIR /app

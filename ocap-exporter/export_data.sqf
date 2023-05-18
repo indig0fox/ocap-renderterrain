@@ -194,26 +194,26 @@ if (isNil "CBA_fnc_encodeJSON") then {
     ];
 
     private _worldName = toLower worldName;
+    OCAP_EXPORTER_METADATA set ["worldName", _worldName];
+    OCAP_EXPORTER_METADATA set ["worldname", _worldName];
+    OCAP_EXPORTER_METADATA set ["worldNameOriginal", worldName];
 
     comment "For worlds larger than the native resolution of the PNG we're going to tile, we'll double the overall resolution of the output. The multiplier should respect this.";
     private _imageSize = [
         16384,
         32768
     ] select (worldSize >= 16384);
+    OCAP_EXPORTER_METADATA set ["imageSize", _imageSize];
 
     private _multiplier = [
         16384 / worldSize,
         32768 / worldSize
     ] select (worldSize >= 16384);
+    OCAP_EXPORTER_METADATA set ["multiplier", _multiplier toFixed 7];
 
     comment "fetch world data";
     OCAP_EXPORTER_METADATA set ["attribution", getText(configFile >> "CfgWorlds" >> worldName >> "author")];
     OCAP_EXPORTER_METADATA set ["displayName", getText(configFile >> "CfgWorlds" >> worldName >> "description")];
-    OCAP_EXPORTER_METADATA set ["worldName", _worldName];
-    OCAP_EXPORTER_METADATA set ["worldname", _worldName];
-    OCAP_EXPORTER_METADATA set ["worldNameOriginal", worldName];
-    OCAP_EXPORTER_METADATA set ["worldSize", worldSize];
-    OCAP_EXPORTER_METADATA set ["multiplier", _multiplier toFixed 7];
     OCAP_EXPORTER_METADATA set ["latitude", getNumber(configFile >> "CfgWorlds" >> worldName >> "latitude")];
     OCAP_EXPORTER_METADATA set ["longitude", getNumber(configFile >> "CfgWorlds" >> worldName >> "longitude")];
 

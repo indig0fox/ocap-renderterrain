@@ -66,6 +66,13 @@ def preprocess_svg(in_file, out_file):
         ellipse.set("rx", "6.00")
         ellipse.set("ry", "6.00")
 
+    print("Processing forests...")
+    # for all polygons under <g id="forests">, add fill-opacity=0.5
+    forests_polygons = get_svg_items(svg_root, "forests", "polygon")
+    for polygon in forests_polygons:
+        polygon.set("fill-opacity", "0.2")
+        polygon.set("fill", "#3e6e30")
+
     print("Processing roads...")
     # get all polylines under <g id="roads">
     roads_polylines = get_svg_items(svg_root, "roads", "polyline")
@@ -120,21 +127,13 @@ def generate_svg_dark(in_file, out_file):
       # reduce opacity of countLines
       for polyline in count_lines:
           polyline.set("opacity", "0.5")
-
-    print("Processing forest...")
-    forest_poly = get_svg_items(svg_root, "forests", "polygon")
-    if forest_poly is not None:
-      # darken forest
-      for polyline in forest_poly:
-          polyline.set("fill", "#3e6e30")
-          polyline.set("opacity", "0.5")
     
     print("Processing land...")
     land = get_svg_items(svg_root, "terrain", "polygon")
     if land is not None:
       # darken land
       for land_el in land:
-        land_el.set("fill", "#0f0f0f")
+        land_el.set("fill", "#1d2b20")
 
     print("Processing sea...")
     sea = get_svg_items(svg_root, "terrain", "rect")
@@ -164,46 +163,149 @@ def generate_svg_dark(in_file, out_file):
     # write xml back to svg
     svg.write(out_file)
 
-def convert_svg_to_24bit_png(in_file, out_file, export_size):
+def generate_svg_landonly(in_file, out_file):
+    """Create an SVG that only has land and sea layers for us to overlay analysis layers."""
+    # read SVG as XML for parsing
+    print("Reading SVG...")
+    svg = ET.parse(in_file)
+    svg_root = svg.getroot()
+    if svg_root is None:
+        print(f"Failed to parse SVG file ({in_file}), exiting...")
+        sys.exit(1)
+    
+    # get all <g> elements
+    gs = svg_root.findall("./{http://www.w3.org/2000/svg}g")
+    # remove all <g> elements except for terrain
+    for g in gs:
+      if g.get("id") != "terrain":
+        svg_root.remove(g)
+
+    # write xml back to svg
+    svg.write(out_file)
+
+def generate_svg_noland(in_file, out_file):
+    """Create an SVG that has everything above the terrain layers, to render over analysis layers (except forests which need opacity)."""
+    # read SVG as XML for parsing
+    print("Reading SVG...")
+    svg = ET.parse(in_file)
+    svg_root = svg.getroot()
+    if svg_root is None:
+        print(f"Failed to parse SVG file ({in_file}), exiting...")
+        sys.exit(1)
+    
+    # get all <g> elements where id=terrain
+    gs = svg_root.findall("./{http://www.w3.org/2000/svg}g")
+    # remove all <g> elements except for terrain
+    for g in gs:
+      if g.get("id") == "terrain":
+        svg_root.remove(g)
+
+    # write xml back to svg
+    svg.write(out_file)
+
+# def generate_svg_forestonly(in_file, out_file):
+#     """Create an SVG that has everything above the terrain layers, to render over analysis layers."""
+#     # read SVG as XML for parsing
+#     print("Reading SVG...")
+#     svg = ET.parse(in_file)
+#     svg_root = svg.getroot()
+#     if svg_root is None:
+#         print(f"Failed to parse SVG file ({in_file}), exiting...")
+#         sys.exit(1)
+    
+#     # get all <g> elements where id=terrain
+#     gs = svg_root.findall("./{http://www.w3.org/2000/svg}g")
+#     # remove all <g> elements except for terrain
+#     for g in gs:
+#       if g.get("id") != "forests":
+#         svg_root.remove(g)
+
+#     # write xml back to svg
+#     svg.write(out_file)
+
+def convert_svg_to_png(in_file, out_file, export_size):
     """Convert SVG to PNG using Inkscape"""
     # convert svg file to png
     print("Converting SVG to PNG...")
 
     temp_file = out_file.replace(".png", "_temp.png")
     subprocess.call(
-        f'inkscape -o {temp_file} --export-id="terrain" --export-height={export_size} --export-width={export_size} {in_file}',
+        f'inkscape -o {out_file} --export-height={export_size} --export-width={export_size} {in_file}',
         # f"libreoffice --headless --convert-to png --outdir {out_dir} {in_file}",
         shell=True,
     )
     print("Converted SVG to PNG")
+
+
+def convert_png_to_24bit(in_file, out_file):
+    """Convert PNG to 24-bit"""
     print("Converting PNG to 24-bit...")
-    try:
-      subprocess.call(
-          f"convert {temp_file} -alpha off {out_file}",
-          shell=True,
+
+    ret_code = subprocess.call(
+        f"convert {in_file} -alpha off {out_file}",
+        shell=True,
       )
-    except:
-      print("Error converting PNG to 24-bit, exiting...")
-      sys.exit(1)
+    if ret_code != 0:
+        print("Error converting PNG to 24-bit, exiting...")
+        sys.exit(1)
     print("Converted PNG to 24-bit, saved as", out_file)
-    print("Deleting temp file...")
-    os.remove(temp_file)
-    print("Deleted temp file")
 
 
-def generate_heightmap(in_file, out_file):
+def generate_heightmap(in_file, out_file, export_size):
     """Convert DEM (XYZ or ASC) to GeoTIFF"""
 
     subprocess.call(
         f"gdaldem hillshade -alg Horn -alt 45 -multidirectional -of PNG {in_file} {out_file}",
         shell=True,
     )
+    # resize to export_size
+    subprocess.call(
+        f"convert {out_file} -resize {export_size}x{export_size} {out_file}",
+        shell=True,
+    )
 
-
-def generate_colorrelief(in_file, out_file):
+def generate_colorrelief(in_file, out_file, export_size):
     """Convert DEM (XYZ or ASC) to GeoTIFF"""
 
+    # see here for other color relief options
+    # http://soliton.vm.bytemark.co.uk/pub/cpt-city/index.html
     subprocess.call(
-        f"gdaldem color-relief -of PNG {in_file} ./modules/colorrelief.txt {out_file}",
+        f"gdaldem color-relief -of PNG {in_file} ./modules/nzblue.cpt {out_file}",
+        shell=True,
+    )
+    # resize to export_size
+    subprocess.call(
+        f"convert {out_file} -resize {export_size}x{export_size} {out_file}",
+        shell=True,
+    )
+
+def set_half_opacity(in_file, out_file):
+    """Set image to half opacity"""
+    subprocess.call(
+        f"convert {in_file} -alpha set -channel a -evaluate set 50% {out_file}",
+        shell=True,
+    )
+
+def composite_images(in_file, overlay_file, out_file):
+    """Composite two PNGs"""
+    # overlay filter
+    subprocess.call(
+        f"convert {in_file} {overlay_file} -composite {out_file}",
+        shell=True,
+    )
+
+def overlay_images(in_file, overlay_file, out_file):
+    """Overlay two PNGs"""
+    # overlay filter
+    subprocess.call(
+        f"convert {in_file} {overlay_file} -compose overlay -composite {out_file}",
+        shell=True,
+    )
+
+def multiply_images(in_file, overlay_file, out_file):
+    """Multiply two PNGs"""
+    # multiply filter
+    subprocess.call(
+        f"convert {in_file} {overlay_file} -compose multiply -composite {out_file}",
         shell=True,
     )
