@@ -105,10 +105,10 @@ The input data is expected to be in the `input` directory of this project. The i
 
 | Input Data                 | Source                                                                                                 |
 | -------------------------- | ------------------------------------------------------------------------------------------------------ |
-| dem.asc                    | export_data.sqf                                                                                        |
+| {worldName}.asc                    | export_data.sqf                                                                                        |
 | map.json                   | export_data.sqf                                                                                        |
 | {worldName}.svg            | [diag_exportTerrainSVG](https://community.bistudio.com/wiki/diag_exportTerrainSVG) via export_data.sqf |
-| {worldName}.emf (NOT USED) | [EXPORTNOGRID Cheat (see TOPOGRAPHY)](https://community.bistudio.com/wiki/Arma_3:_Cheats)              |
+| ocap_exporter.log          | a log of capture |
 
 ---
 
@@ -141,6 +141,33 @@ docker run -it --rm --name ocap-rendermap --mount type=bind,src="$(pwd)"/input,t
 <!-- WITH TEMP BIND MOUNTED FOR DEBUG -->
 docker run -it --rm --name ocap-rendermap --mount type=bind,src="$(pwd)"/input,target=/app/input --mount type=bind,src="$(pwd)"/output,target=/app/output --mount type=bind,src="$(pwd)"/temp,target=/app/temp indifox926/ocap-rendermap:latest
 ```
+
+### Output Data Structure
+
+The output data will be saved to the `output` directory of this project. The output data will be in the following format:
+
+    output
+    ├── {worldName}
+    │   ├── topo
+    │   │   ├── {z}
+    │   │   │   ├── {x}
+    │   │   │   │   ├── {y}.png
+    │   │   │   │   ├── {y}.png.aux.xml
+    │   │   │   ├── ...
+    │   │   │   └── {x}
+    │   │   ├── ...
+    │   │   └── {z}
+    │   ├── topoDark
+    |   |   └─ <same format as above>
+    │   ├── topoRelief
+    │   |   └─ <same format as above>
+    │   └── colorRelief
+    │   |    └─ <same format as above>
+    |   ├── {worldName}_colorRelief.tif (georeferenced GeoTiff)
+    |   ├── {worldName}_topoRelief.tif (georeferenced GeoTiff)
+    |   └── map.json (metadata)
+
+This folder can be installed directly to the local /maps folder of an OCAP2 instance. Please also provide this data to [indigo@indigofox.dev](mailto:indigo@indigofox.dev) or on the OCAP2 Discord server so that it can be hosted for others to stream.
 
 ## Credits
 

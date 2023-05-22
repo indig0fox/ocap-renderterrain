@@ -45,6 +45,18 @@ def preprocess_svg(in_file, out_file):
         print(f"Failed to parse SVG file ({in_file}), exiting...")
         sys.exit(1)
 
+
+    forests_polygons = get_svg_items(svg_root, "forests", "polygon")
+    # if count of forest polygons is > 150000, compress the SVG
+    if len(forests_polygons) > 250000:
+        # get forests root
+        forests = svg_root.find("./{http://www.w3.org/2000/svg}g[@id='forests']")
+        # remove forests from svg
+        for forest in forests:
+            forests.remove(forest)
+
+
+
     print("Processing countLines...")
     # get all polylines under <g id="countLines">
     count_lines = get_svg_items(svg_root, "countLines", "polyline")
@@ -67,12 +79,14 @@ def preprocess_svg(in_file, out_file):
         ellipse.set("ry", "6.00")
 
     print("Processing forests...")
-    # for all polygons under <g id="forests">, add fill-opacity=0.5
     forests_polygons = get_svg_items(svg_root, "forests", "polygon")
+    # for all polygons under <g id="forests">, add fill-opacity=0.5
     for polygon in forests_polygons:
         polygon.set("fill-opacity", "0.2")
         polygon.set("fill", "#3e6e30")
 
+
+         
     print("Processing roads...")
     # get all polylines under <g id="roads">
     roads_polylines = get_svg_items(svg_root, "roads", "polyline")

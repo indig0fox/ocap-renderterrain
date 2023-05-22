@@ -2,17 +2,13 @@ import os
 import shutil
 import sys
 import subprocess
-from time import sleep
-
-import shapely
+import re
 import json
-import numpy as np
-import rasterio
-import geopandas as gpd
-import matplotlib.pyplot as plt
+from threading import Thread
 
 # import modules from ./modules
 from modules import file_conversion
+from modules import compress
 
 # print a list of files in .
 print("Files in .:")
@@ -29,6 +25,65 @@ print("Found the following worlds:")
 for world in world_list:
     print("", world)
 print("")
+
+
+# Manual compression on-demand
+# OUTPUT_FOLDER = "./output/csj_lowlands"
+# WORLDNAME = "csj_lowlands"
+# MAX_ZOOM = 6
+# print(f"=== Compressing images... {WORLDNAME} ===")
+# for zoom in range(0, MAX_ZOOM + 1):
+#     print(f"Starting threads for compressing zoom level {zoom}...")
+#     topo_compression = Thread(
+#       target=compress.compress_images_in_folder,
+#       args=(os.path.join(OUTPUT_FOLDER, str(zoom)),)
+#     )
+#     topoDark_compression = Thread(
+#       target=compress.compress_images_in_folder,
+#       args=(os.path.join(OUTPUT_FOLDER, "topoDark", str(zoom)),)
+#     )
+#     topoRelief_compression = Thread(
+#       target=compress.compress_images_in_folder,
+#       args=(os.path.join(OUTPUT_FOLDER, "topoRelief", str(zoom)),)
+#     )
+#     colorRelief_compression = Thread(
+#       target=compress.compress_images_in_folder,
+#       args=(os.path.join(OUTPUT_FOLDER, "colorRelief", str(zoom)),)
+#     )
+#     topo_compression.start()
+#     topoDark_compression.start()
+#     topoRelief_compression.start()
+#     colorRelief_compression.start()
+#     print("Waiting for threads to finish...")
+#     topo_compression.join()
+#     print(f"Topo compression finished (z{zoom}/{MAX_ZOOM}) (process 1/4)")
+#     topoDark_compression.join()
+#     print(f"TopoDark compression finished (z{zoom}/{MAX_ZOOM}) (process 2/4)")
+#     topoRelief_compression.join()
+#     print(f"TopoRelief compression finished (z{zoom}/{MAX_ZOOM}) (process 3/4)")
+#     colorRelief_compression.join()
+#     print(f"ColorRelief compression finished (z{zoom}/{MAX_ZOOM}) (process 4/4)")
+# sys.exit(0)
+
+# clear everything in TEMP_FOLDER
+TEMP_FOLDER = "./temp"
+if not os.path.exists(TEMP_FOLDER):
+    os.makedirs(TEMP_FOLDER)
+else:
+    for filename in os.listdir(TEMP_FOLDER):
+        file_path = os.path.join(TEMP_FOLDER, filename)
+        if os.path.isfile(file_path) or os.path.islink(file_path):
+            try:
+                os.unlink(file_path)
+            except Exception as e:
+                print(f"Failed to delete {file_path}. Reason: {e}")
+        elif os.path.isdir(file_path):
+            try:
+                shutil.rmtree(file_path)
+            except Exception as e:
+                print(f"Failed to delete {file_path}. Reason: {e}")
+
+#######################################
 
 # for each folder in INPUT_FOLDER
 for WORLDNAME_PATH in world_list:
@@ -109,7 +164,6 @@ for WORLDNAME_PATH in world_list:
     ########################################
 
     PNG_HILLSHADE_BASE_FILE_PATH = os.path.join(TEMP_FOLDER, f"{WORLDNAME}_landonly_hillshade.png")
-    PNG_COLORRELIEF_BASE_FILE_PATH = os.path.join(TEMP_FOLDER, f"{WORLDNAME}_landonly_colorrelief.png")
 
     ########################################
 
@@ -122,6 +176,7 @@ for WORLDNAME_PATH in world_list:
 
     # first, preprocess the arma 3 svg as there are some things wrong with it
     print(f"=== Preprocessing SVG... {WORLDNAME} ===")
+    
     file_conversion.preprocess_svg(SVG_FILE_PATH, SVG_FILE_PROC_PATH)
 
     # render alternates
@@ -200,11 +255,17 @@ for WORLDNAME_PATH in world_list:
     print(f"=== Overlaying hillshade onto landonly PNG... {WORLDNAME} ===")
 
     # overlay hillshade onto landonly
-    print("Processing hillshade...")
     file_conversion.multiply_images(
         os.path.abspath(PNG_LANDONLY_FILE_PATH),
         os.path.abspath(HILLSHADE_HALFOPACITY_FILE_PATH),
         os.path.abspath(PNG_HILLSHADE_BASE_FILE_PATH)
+    )
+    print(f"=== Overlaying hillshade onto colorrelief PNG... {WORLDNAME} ===")
+    # overlay hillshade onto colorrelief
+    file_conversion.multiply_images(
+        os.path.abspath(PNG_COLORRELIEF_FILE_PATH),
+        os.path.abspath(HILLSHADE_HALFOPACITY_FILE_PATH),
+        os.path.abspath(PNG_COLORRELIEF_FILE_PATH)
     )
     # We're going to skip any compositing of colorrelief here. We'll use that as its own base layer since we're more concerned about elevation representation.
 
@@ -237,8 +298,42 @@ for WORLDNAME_PATH in world_list:
     ]:
         print(f"=== Removing alpha channel from {outfile}... {WORLDNAME} ===")
         file_conversion.convert_png_to_24bit(outfile, outfile)
-        print(f"=== Moving {outfile} to output folder... {WORLDNAME} ===")
-        shutil.move(outfile, os.path.join(OUTPUT_FOLDER, os.path.basename(outfile)))
+        # print(f"=== Moving {outfile} to output folder... {WORLDNAME} ===")
+        # shutil.move(outfile, os.path.join(OUTPUT_FOLDER, os.path.basename(outfile)))
+
+    # generate tilesets
+    print(f"=== Generating tilesets... {WORLDNAME} ===")
+    # render topo to folder root
+    print("Generating tileset \"topo\" to subfolder...")
+    subprocess.call(
+        f"gdal2tiles.py -p raster --xyz -z 0-8 -w all -r lanczos -t {WORLDNAME}_topo {PNG_TOPO_FILE_PATH} {OUTPUT_FOLDER}",
+        shell=True,
+    )
+    # render dark, topo, and colorrelief to subfolders
+    for outfile in [
+        [PNG_DARK_FILE_PATH, "topoDark"],
+        [PNG_TOPORELIEF_FILE_PATH, "topoRelief"],
+        [PNG_COLORRELIEF_FILE_PATH, "colorRelief"],
+    ]:
+        image_path, folder_name = outfile
+        print(f"Generating tileset \"{folder_name}\" to subfolder...")
+        subprocess.call(
+            f"gdal2tiles.py -p raster --xyz -z 0-8 -r lanczos -t {WORLDNAME}_{folder_name} {image_path} {os.path.join(OUTPUT_FOLDER, folder_name)}",
+            shell=True,
+        )
+
+    # we need to check the max zoom that was rendered. the auto-clamped max zoom will vary based on original image size, which here is paired to the worldSize in m. we'll then update the metadata with the maxZoom.
+    print(f"=== Updating metadata... {WORLDNAME} ===")
+    MAX_ZOOM = 0
+    # get files in output folder
+    for filename in os.listdir(OUTPUT_FOLDER):
+        # if filename is a one or two digit number, it's a zoom level
+        if re.match(r"^\d{1,2}$", filename):
+            # if the filename is a number, check if it's greater than max_zoom
+            if int(filename) > MAX_ZOOM:
+                MAX_ZOOM = int(filename)
+    # update metadata
+    WORLD_JSON["maxZoom"] = MAX_ZOOM
 
     # write metadata file
     print(f"=== Writing metadata file... {WORLDNAME} ===")
@@ -246,8 +341,121 @@ for WORLDNAME_PATH in world_list:
     WORLD_JSON["hasTopoRelief"] = True
     WORLD_JSON["hasColorRelief"] = True
     with open(os.path.join(OUTPUT_FOLDER, "map.json"), "w", encoding="utf-8") as outfile:
-        json.dump(WORLD_JSON, outfile)
+        json.dump(WORLD_JSON, outfile, indent=2)
         outfile.close()
+
+    # render a georeferenced GeoTIFF of topoRelief and colorRelief
+    print(f"=== Generating GeoTIFFs... {WORLDNAME} ===")
+    # get bounds from metadata (worldsize)
+    terrain_bounds = [
+        [0, WORLD_JSON["worldSize"]],
+        [WORLD_JSON["worldSize"], WORLD_JSON["worldSize"]],
+        [WORLD_JSON["worldSize"], 0],
+        [0, 0],
+    ]
+    # convert to geotiff
+    print("Converting topoRelief to GeoTiff...")
+    subprocess.call(
+        f"gdal_translate -of GTiff -a_srs EPSG:3857 -a_ullr {terrain_bounds[0][0]} {terrain_bounds[0][1]} {terrain_bounds[2][0]} {terrain_bounds[2][1]} -co COMPRESS=DEFLATE {PNG_TOPORELIEF_FILE_PATH} {os.path.join(OUTPUT_FOLDER, f'{WORLDNAME}_topoRelief.tif')}",
+        shell=True,)
+    print("Converting colorRelief to GeoTiff...")
+    subprocess.call(
+        f"gdal_translate -of GTiff -a_srs EPSG:3857 -a_ullr {terrain_bounds[0][0]} {terrain_bounds[0][1]} {terrain_bounds[2][0]} {terrain_bounds[2][1]} -co COMPRESS=DEFLATE {PNG_COLORRELIEF_FILE_PATH} {os.path.join(OUTPUT_FOLDER, f'{WORLDNAME}_colorRelief.tif')}",
+        shell=True,)
+
+    
+    # # generate a geojson of a 100m grid from 0 to 40km
+    # print(f"=== Generating 40x40km geojson grid... {WORLDNAME} ===")
+    # geojson_grid = {}
+    # geojson_grid["type"] = "FeatureCollection"
+    # geojson_grid["features"] = []
+    # for x in range(0, 40001, 100):
+    #     geojson_grid["features"].append({
+    #         "type": "Feature",
+    #         "properties": {
+    #             "name": "grid",
+    #             "stroke": "#555555",
+    #             "stroke-width": 1,
+    #             "stroke-opacity": 0.5,
+    #             "gridlabel": x
+    #         },
+    #         "geometry": {
+    #             "type": "LineString",
+    #             "coordinates": [
+    #                 [x, 0],
+    #                 [x, 40000]
+    #             ]
+    #         },
+    #     })
+    # for y in range(0, 40001, 100):
+    #     geojson_grid["features"].append({
+    #         "type": "Feature",
+    #         "properties": {
+    #             "name": "grid",
+    #             "stroke": "#555555",
+    #             "stroke-width": 1,
+    #             "stroke-opacity": 0.5,
+    #             "gridlabel": y
+    #         },
+    #         "geometry": {
+    #             "type": "LineString",
+    #             "coordinates": [
+    #                 [0, y],
+    #                 [40000, y]
+    #             ]
+    #         },
+    #     })
+
+    # with open(os.path.join(OUTPUT_FOLDER, f"{WORLDNAME}_grid_unprojected.geojson"), "w", encoding="utf-8") as outfile:
+    #     json.dump(geojson_grid, outfile)
+    #     outfile.close()
+
+    # # use gdal_translate to place it in EPSG:3857
+    # print("Converting grid to EPSG:3857...")
+    # subprocess.call(
+    #     f"ogr2ogr -f \"GeoJSON\" -s_srs \"EPSG:3857\" -t_srs \"EPSG:4326\" {os.path.join(OUTPUT_FOLDER, f'{WORLDNAME}_grid.geojson')} {os.path.join(OUTPUT_FOLDER, f'{WORLDNAME}_grid_unprojected.geojson')}",
+    #     shell=True,)
+    
+
+
+    
+
+
+    # open threads for tiling
+    print(f"=== Compressing images... {WORLDNAME} ===")
+    for zoom in range(0, MAX_ZOOM + 1):
+        print(f"Starting threads for compressing zoom level {zoom}...")
+        topo_compression = Thread(
+          target=compress.compress_images_in_folder,
+          args=(os.path.join(OUTPUT_FOLDER, str(zoom)),)
+        )
+        topoDark_compression = Thread(
+          target=compress.compress_images_in_folder,
+          args=(os.path.join(OUTPUT_FOLDER, "topoDark", str(zoom)),)
+        )
+        topoRelief_compression = Thread(
+          target=compress.compress_images_in_folder,
+          args=(os.path.join(OUTPUT_FOLDER, "topoRelief", str(zoom)),)
+        )
+        colorRelief_compression = Thread(
+          target=compress.compress_images_in_folder,
+          args=(os.path.join(OUTPUT_FOLDER, "colorRelief", str(zoom)),)
+        )
+        topo_compression.start()
+        topoDark_compression.start()
+        topoRelief_compression.start()
+        colorRelief_compression.start()
+        topo_compression.join()
+        print(f"Topo compression finished (z{zoom}/{MAX_ZOOM}) (process 1/4)")
+        topoDark_compression.join()
+        print(f"TopoDark compression finished (z{zoom}/{MAX_ZOOM}) (process 2/4)")
+        topoRelief_compression.join()
+        print(f"TopoRelief compression finished (z{zoom}/{MAX_ZOOM}) (process 3/4)")
+        colorRelief_compression.join()
+        print(f"ColorRelief compression finished (z{zoom}/{MAX_ZOOM}) (process 4/4)")
+
+
+    
 
     print("=== Completed tasks for", WORLDNAME, "===")
 

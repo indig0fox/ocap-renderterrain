@@ -199,6 +199,7 @@ if (isNil "CBA_fnc_encodeJSON") then {
     OCAP_EXPORTER_METADATA set ["worldNameOriginal", worldName];
 
     comment "For worlds larger than the native resolution of the PNG we're going to tile, we'll double the overall resolution of the output. The multiplier should respect this.";
+    OCAP_EXPORTER_METADATA set ["worldSize", worldSize];
     private _imageSize = [
         16384,
         32768
