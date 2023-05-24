@@ -46,15 +46,36 @@ def preprocess_svg(in_file, out_file):
         sys.exit(1)
 
 
-    forests_polygons = get_svg_items(svg_root, "forests", "polygon")
-    # if count of forest polygons is > 150000, compress the SVG
-    if len(forests_polygons) > 250000:
-        # get forests root
-        forests = svg_root.find("./{http://www.w3.org/2000/svg}g[@id='forests']")
-        # remove forests from svg
-        for forest in forests:
-            forests.remove(forest)
+    # forests_polygons = get_svg_items(svg_root, "forests", "polygon")
+    # # if count of forest polygons is > 50000, compress the SVG
+    # print("Forest count:", len(forests_polygons))
+    # if len(forests_polygons) > 50000:
+    #     print("Warning: Forests count is > 50000, removing forests from SVG")
+    #     # get forests root
+    #     forests = svg_root.find("./{http://www.w3.org/2000/svg}g[@id='forests']")
+    #     # remove forests from svg
+    #     for forest in forests:
+    #         forests.remove(forest)
 
+    tree_ellipses = get_svg_items(svg_root, "objects", "ellipse")
+    # if count of tree ellipses is > 150000, compress the SVG
+    print("Tree count:", len(tree_ellipses))
+    if len(tree_ellipses) > 50000:
+        print("Warning: Tree count is > 50000, removing trees + forestborders from SVG")
+        # get objects root
+        objects = svg_root.find("./{http://www.w3.org/2000/svg}g[@id='objects']")
+        # remove objects from svg
+        print("Removing", len(tree_ellipses), "trees")
+        for tree in tree_ellipses:
+            objects.remove(tree)
+        # get forestborders root
+        forests_root = svg_root.find("./{http://www.w3.org/2000/svg}g[@id='forests']")
+        forest_border_els = get_svg_items(forests_root, "forestBorder", "line")
+        print("Removing", len(forest_border_els), "forest borders")
+
+        forestborders_root = forests_root.find("./{http://www.w3.org/2000/svg}g[@id='forestBorder']")
+        # remove forestborder
+        forests_root.remove(forestborders_root)
 
 
     print("Processing countLines...")

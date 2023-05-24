@@ -356,11 +356,11 @@ for WORLDNAME_PATH in world_list:
     # convert to geotiff
     print("Converting topoRelief to GeoTiff...")
     subprocess.call(
-        f"gdal_translate -of GTiff -a_srs EPSG:3857 -a_ullr {terrain_bounds[0][0]} {terrain_bounds[0][1]} {terrain_bounds[2][0]} {terrain_bounds[2][1]} -co COMPRESS=DEFLATE {PNG_TOPORELIEF_FILE_PATH} {os.path.join(OUTPUT_FOLDER, f'{WORLDNAME}_topoRelief.tif')}",
+        f"gdal_translate -of GTiff -a_srs EPSG:3857 -a_ullr {terrain_bounds[0][0]} {terrain_bounds[0][1]} {terrain_bounds[2][0]} {terrain_bounds[2][1]} -co COMPRESS=DEFLATE -co TILED=YES {PNG_TOPORELIEF_FILE_PATH} {os.path.join(OUTPUT_FOLDER, f'{WORLDNAME}_topoRelief.tif')}",
         shell=True,)
     print("Converting colorRelief to GeoTiff...")
     subprocess.call(
-        f"gdal_translate -of GTiff -a_srs EPSG:3857 -a_ullr {terrain_bounds[0][0]} {terrain_bounds[0][1]} {terrain_bounds[2][0]} {terrain_bounds[2][1]} -co COMPRESS=DEFLATE {PNG_COLORRELIEF_FILE_PATH} {os.path.join(OUTPUT_FOLDER, f'{WORLDNAME}_colorRelief.tif')}",
+        f"gdal_translate -of GTiff -a_srs EPSG:3857 -a_ullr {terrain_bounds[0][0]} {terrain_bounds[0][1]} {terrain_bounds[2][0]} {terrain_bounds[2][1]} -co COMPRESS=DEFLATE -co TILED=YES {PNG_COLORRELIEF_FILE_PATH} {os.path.join(OUTPUT_FOLDER, f'{WORLDNAME}_colorRelief.tif')}",
         shell=True,)
 
     
