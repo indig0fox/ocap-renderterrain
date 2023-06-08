@@ -136,10 +136,10 @@ docker build -t indifox926/ocap-rendermap:latest .
 
 
 <!-- WITHOUT TEMP MOUNTED, FOR SPEED -->
-docker run -it --rm --name ocap-rendermap --mount type=bind,src="$(pwd)"/input,target=/app/input --mount type=bind,src="$(pwd)"/output,target=/app/output indifox926/ocap-rendermap:latest
+docker run -it --rm --name ocap-rendermap --mount type=bind,src="$(pwd)"/input,target=/app/input --mount type=bind,src="$(pwd)"/output,target=/app/output --memory=8g indifox926/ocap-rendermap:latest
 
 <!-- WITH TEMP BIND MOUNTED FOR DEBUG -->
-docker run -it --rm --name ocap-rendermap --mount type=bind,src="$(pwd)"/input,target=/app/input --mount type=bind,src="$(pwd)"/output,target=/app/output --mount type=bind,src="$(pwd)"/temp,target=/app/temp indifox926/ocap-rendermap:latest
+docker run -it --rm --name ocap-rendermap --mount type=bind,src="$(pwd)"/input,target=/app/input --mount type=bind,src="$(pwd)"/output,target=/app/output --mount type=bind,src="$(pwd)"/temp,target=/app/temp --memory=8g indifox926/ocap-rendermap:latest
 ```
 
 ### Output Data Structure

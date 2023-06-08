@@ -58,13 +58,13 @@ root@bbc1bd21c1bb:/etc/ImageMagick-6# cat policy.xml
 -->
 <policymap>
   <!-- <policy domain="resource" name="temporary-path" value="/tmp"/> -->
-  <!-- <policy domain="resource" name="memory" value="256MiB"/>
-  <policy domain="resource" name="map" value="512MiB"/>
-  <policy domain="resource" name="width" value="16KP"/>
-  <policy domain="resource" name="height" value="16KP"/> -->
+  <policy domain="resource" name="memory" value="6GiB"/>
+  <policy domain="resource" name="map" value="3GiB"/>
+  <policy domain="resource" name="width" value="40KP"/>
+  <policy domain="resource" name="height" value="40KP"/>
   <!-- <policy domain="resource" name="list-length" value="128"/> -->
-  <!-- <policy domain="resource" name="area" value="128MP"/>
-  <policy domain="resource" name="disk" value="1GiB"/> -->
+  <policy domain="resource" name="area" value="1GP"/>
+  <policy domain="resource" name="disk" value="10GiB"/>
   <!-- <policy domain="resource" name="file" value="768"/> -->
   <!-- <policy domain="resource" name="thread" value="4"/> -->
   <!-- <policy domain="resource" name="throttle" value="0"/> -->

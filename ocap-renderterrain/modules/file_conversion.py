@@ -2,6 +2,8 @@ import os
 import subprocess
 import sys
 
+from prettytable import PrettyTable
+
 import xml.etree.ElementTree as ET
 
 
@@ -46,6 +48,25 @@ def preprocess_svg(in_file, out_file):
         sys.exit(1)
 
 
+    # get counts of each g category and print as a table
+    type_counts = PrettyTable()
+    type_counts.field_names = ["Category", "polyline", "polygon", "ellipse", "line", "text"]
+    for category in svg_root.findall("./{http://www.w3.org/2000/svg}g"):
+        category_id = category.get("id")
+        type_counts.add_row([category_id,
+                             len(get_svg_items(svg_root, category_id, "polyline")),
+                             len(get_svg_items(svg_root, category_id, "polygon")),
+                             len(get_svg_items(svg_root, category_id, "ellipse")),
+                             len(get_svg_items(svg_root, category_id, "line")),
+                             len(get_svg_items(svg_root, category_id, "text"))])
+
+    # get forestBorders under forests
+    forests_root = svg_root.find("./{http://www.w3.org/2000/svg}g[@id='forests']")
+    forest_border_els = get_svg_items(forests_root, "forestBorder", "line")
+    type_counts.add_row(["forestBorders", 0, 0, 0, len(forest_border_els), 0])
+
+    print(type_counts)
+
     # forests_polygons = get_svg_items(svg_root, "forests", "polygon")
     # # if count of forest polygons is > 50000, compress the SVG
     # print("Forest count:", len(forests_polygons))
@@ -58,25 +79,43 @@ def preprocess_svg(in_file, out_file):
     #         forests.remove(forest)
 
     tree_ellipses = get_svg_items(svg_root, "objects", "ellipse")
-    # if count of tree ellipses is > 150000, compress the SVG
+    # if count of tree ellipses is > 30000, compress the SVG
     print("Tree count:", len(tree_ellipses))
-    if len(tree_ellipses) > 50000:
-        print("Warning: Tree count is > 50000, removing trees + forestborders from SVG")
+    if len(tree_ellipses) > 30000:
+        print("Warning: Tree count is > 30000, removing trees + forestborders from SVG")
         # get objects root
         objects = svg_root.find("./{http://www.w3.org/2000/svg}g[@id='objects']")
         # remove objects from svg
         print("Removing", len(tree_ellipses), "trees")
         for tree in tree_ellipses:
             objects.remove(tree)
-        # get forestborders root
-        forests_root = svg_root.find("./{http://www.w3.org/2000/svg}g[@id='forests']")
-        forest_border_els = get_svg_items(forests_root, "forestBorder", "line")
-        print("Removing", len(forest_border_els), "forest borders")
 
-        forestborders_root = forests_root.find("./{http://www.w3.org/2000/svg}g[@id='forestBorder']")
-        # remove forestborder
-        forests_root.remove(forestborders_root)
+    # get forest root
+    forests_root = svg_root.find("./{http://www.w3.org/2000/svg}g[@id='forests']")
+    # get forestborders
+    forest_polygon_els = get_svg_items(svg_root, "forests", "polygon")
+    forest_border_els = get_svg_items(forests_root, "forestBorder", "line")
+    print("Forest count:", len(forest_polygon_els))
+    print("Forest border count:", len(forest_border_els))
 
+    # pick the one that's greater
+    to_cull = ["forests", forest_polygon_els] if len(forest_polygon_els) > len(forest_border_els) else ["borders", forest_border_els]
+       
+    if len(to_cull[1]) > 250000:
+        print("Warning: Forest or forest border count is > 250000. Keeping the one with fewest features.")
+
+        if to_cull[0] == "forests":
+            # remove forests
+            for forest in to_cull[1]:
+                forests_root.remove(forest)
+        else:
+            forest_borders_root = forests_root.find("./{http://www.w3.org/2000/svg}g[@id='forestBorders']")
+            # remove forestborder
+            for forestborder in to_cull[1]:
+                forest_borders_root.remove(forestborder)
+        print("Removed", len(to_cull[1]), to_cull[0])
+
+    # breakpoint()
 
     print("Processing countLines...")
     # get all polylines under <g id="countLines">
@@ -144,6 +183,18 @@ def preprocess_svg(in_file, out_file):
 
     # write xml back to svg
     svg.write(out_file)
+
+    # if file size still > 90MB, remove minor countlines
+    if os.path.getsize(out_file) > 90000000:
+        print("File size still > 90MB, removing minor countlines")
+        # get countlines root
+        countlines_root = svg_root.find("./{http://www.w3.org/2000/svg}g[@id='countLines']")
+        # remove minor countlines (where stroke is url(#colorCountlines))
+        for polyline in count_lines:
+            if polyline.get("stroke") == "url(#colorCountlines)":
+                countlines_root.remove(polyline)
+        # write xml back to svg
+        svg.write(out_file)
 
 
 def generate_svg_dark(in_file, out_file):
@@ -317,7 +368,7 @@ def generate_colorrelief(in_file, out_file, export_size):
 def set_half_opacity(in_file, out_file):
     """Set image to half opacity"""
     subprocess.call(
-        f"convert {in_file} -alpha set -channel a -evaluate set 50% {out_file}",
+        f"convert {in_file} -alpha set -channel a -evaluate set 50% -limit area 0 {out_file}",
         shell=True,
     )
 
@@ -341,6 +392,6 @@ def multiply_images(in_file, overlay_file, out_file):
     """Multiply two PNGs"""
     # multiply filter
     subprocess.call(
-        f"convert {in_file} {overlay_file} -compose multiply -composite {out_file}",
+        f"convert {in_file} {overlay_file} -limit area 500m -compose multiply -composite {out_file}",
         shell=True,
     )

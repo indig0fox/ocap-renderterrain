@@ -4,6 +4,7 @@ import sys
 import subprocess
 import re
 import json
+import math
 from threading import Thread
 
 # import modules from ./modules
@@ -125,8 +126,11 @@ for WORLDNAME_PATH in world_list:
         sys.exit(1)
 
     # WORLD_JSON["imageSize"] = 16384
-    WORLD_JSON["imageSize"] = WORLD_JSON["worldSize"]
+    print("WORLD_JSON", json.dumps(WORLD_JSON, indent=4))
+    WORLD_JSON["worldSize"] = math.ceil(WORLD_JSON["worldSize"])
+    WORLD_JSON["imageSize"] = min(WORLD_JSON["worldSize"], 32768)
     WORLD_JSON["multiplier"] = WORLD_JSON["imageSize"] / WORLD_JSON["worldSize"]
+    print("WORLD_JSON", json.dumps(WORLD_JSON, indent=4))
 
     # XYZ_FILE_PATH = os.path.join(INPUT_FOLDER, f"{WORLDNAME}.xyz")
     # if not os.path.exists(XYZ_FILE_PATH):
@@ -199,6 +203,10 @@ for WORLDNAME_PATH in world_list:
         PNG_TOPO_FILE_PATH,
         WORLD_JSON.get("imageSize", 16384)
     )
+    # if image wasn't created, warn and skip this world
+    if not os.path.exists(PNG_TOPO_FILE_PATH):
+        print(f"Failed to create {PNG_TOPO_FILE_PATH}, skipping world...")
+        continue
     print(f"=== Generating \"dark\" PNG... {WORLDNAME} ===")
     file_conversion.convert_svg_to_png(
         SVG_DARK_FILE_PATH,
