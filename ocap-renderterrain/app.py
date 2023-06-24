@@ -114,7 +114,6 @@ for WORLDNAME_PATH in world_list:
                     except Exception as e:
                         print(f"Failed to delete {file_path}. Reason: {e}")
 
-
     # get metadata json
     WORLD_JSON_FILE_PATH = os.path.join(INPUT_FOLDER, "map.json")
     try:
@@ -143,7 +142,7 @@ for WORLDNAME_PATH in world_list:
         sys.exit(1)
 
     # show gdalinfo for ASC_FILE_PATH
-    subprocess.call(f'gdalinfo -mm {ASC_FILE_PATH}', shell=True)
+    subprocess.call(f"gdalinfo -mm {ASC_FILE_PATH}", shell=True)
 
     SVG_FILE_PATH = os.path.join(INPUT_FOLDER, f"{WORLDNAME}.svg")
     if not os.path.exists(SVG_FILE_PATH):
@@ -167,28 +166,31 @@ for WORLDNAME_PATH in world_list:
 
     ########################################
 
-    PNG_HILLSHADE_BASE_FILE_PATH = os.path.join(TEMP_FOLDER, f"{WORLDNAME}_landonly_hillshade.png")
+    PNG_HILLSHADE_BASE_FILE_PATH = os.path.join(
+        TEMP_FOLDER, f"{WORLDNAME}_landonly_hillshade.png"
+    )
 
     ########################################
 
     PNG_TOPO_FILE_PATH = os.path.join(TEMP_FOLDER, f"{WORLDNAME}_topo.png")
     PNG_TOPORELIEF_FILE_PATH = os.path.join(TEMP_FOLDER, f"{WORLDNAME}_toporelief.png")
-    PNG_COLORRELIEF_FILE_PATH = os.path.join(TEMP_FOLDER, f"{WORLDNAME}_colorrelief.png")
+    PNG_COLORRELIEF_FILE_PATH = os.path.join(
+        TEMP_FOLDER, f"{WORLDNAME}_colorrelief.png"
+    )
 
     ########################################
 
-
     # first, preprocess the arma 3 svg as there are some things wrong with it
     print(f"=== Preprocessing SVG... {WORLDNAME} ===")
-    
+
     file_conversion.preprocess_svg(SVG_FILE_PATH, SVG_FILE_PROC_PATH)
 
     # render alternates
-    print(f"=== Generating \"dark\" svg... {WORLDNAME} ===")
+    print(f'=== Generating "dark" svg... {WORLDNAME} ===')
     file_conversion.generate_svg_dark(SVG_FILE_PROC_PATH, SVG_DARK_FILE_PATH)
-    print(f"=== Generating \"landonly\" svg... {WORLDNAME} ===")
+    print(f'=== Generating "landonly" svg... {WORLDNAME} ===')
     file_conversion.generate_svg_landonly(SVG_FILE_PROC_PATH, SVG_LANDONLY_FILE_PATH)
-    print(f"=== Generating \"noland\" svg... {WORLDNAME} ===")
+    print(f'=== Generating "noland" svg... {WORLDNAME} ===')
     file_conversion.generate_svg_noland(SVG_FILE_PROC_PATH, SVG_NOLAND_FILE_PATH)
     # print(f"=== Generating \"forestonly\" svg... {WORLDNAME} ===")
     # file_conversion.generate_svg_forestonly(SVG_FILE_PROC_PATH, SVG_FORESTONLY_FILE_PATH)
@@ -199,19 +201,15 @@ for WORLDNAME_PATH in world_list:
     print(f"=== Generating default PNG... {WORLDNAME} ===")
     # do this in two steps - maps like Beketov break with how much scattered forest it has
     file_conversion.convert_svg_to_png(
-        SVG_FILE_PROC_PATH,
-        PNG_TOPO_FILE_PATH,
-        WORLD_JSON.get("imageSize", 16384)
+        SVG_FILE_PROC_PATH, PNG_TOPO_FILE_PATH, WORLD_JSON.get("imageSize", 16384)
     )
     # if image wasn't created, warn and skip this world
     if not os.path.exists(PNG_TOPO_FILE_PATH):
         print(f"Failed to create {PNG_TOPO_FILE_PATH}, skipping world...")
         continue
-    print(f"=== Generating \"dark\" PNG... {WORLDNAME} ===")
+    print(f'=== Generating "dark" PNG... {WORLDNAME} ===')
     file_conversion.convert_svg_to_png(
-        SVG_DARK_FILE_PATH,
-        PNG_DARK_FILE_PATH,
-        WORLD_JSON.get("imageSize", 16384)
+        SVG_DARK_FILE_PATH, PNG_DARK_FILE_PATH, WORLD_JSON.get("imageSize", 16384)
     )
     print(f"=== Generating landonly PNG... {WORLDNAME} ===")
     file_conversion.convert_svg_to_png(
@@ -236,25 +234,24 @@ for WORLDNAME_PATH in world_list:
 
     # get visual layers from dem
     HILLSHADE_FILE_PATH = os.path.join(TEMP_FOLDER, f"{WORLDNAME}_hillshade_raw.png")
-    HILLSHADE_HALFOPACITY_FILE_PATH = os.path.join(TEMP_FOLDER, f"{WORLDNAME}_hillshade_halfopacity.png")
-    COLORRELIEF_FILE_PATH = os.path.join(TEMP_FOLDER, f"{WORLDNAME}_colorrelief_raw.png")
+    HILLSHADE_HALFOPACITY_FILE_PATH = os.path.join(
+        TEMP_FOLDER, f"{WORLDNAME}_hillshade_halfopacity.png"
+    )
+    COLORRELIEF_FILE_PATH = os.path.join(
+        TEMP_FOLDER, f"{WORLDNAME}_colorrelief_raw.png"
+    )
     print(f"=== Generating hillshade and colorrelief... {WORLDNAME} ===")
     print("Generating colorrelief...")
     file_conversion.generate_colorrelief(
-        ASC_FILE_PATH,
-        PNG_COLORRELIEF_FILE_PATH,
-        WORLD_JSON.get("imageSize", 16384)
+        ASC_FILE_PATH, PNG_COLORRELIEF_FILE_PATH, WORLD_JSON.get("imageSize", 16384)
     )
     print("Generating hillshade...")
     file_conversion.generate_heightmap(
-        ASC_FILE_PATH,
-        HILLSHADE_FILE_PATH,
-        WORLD_JSON.get("imageSize", 16384)
+        ASC_FILE_PATH, HILLSHADE_FILE_PATH, WORLD_JSON.get("imageSize", 16384)
     )
     print("Setting half opacity on hillshade for later application...")
     file_conversion.set_half_opacity(
-        HILLSHADE_FILE_PATH,
-        HILLSHADE_HALFOPACITY_FILE_PATH
+        HILLSHADE_FILE_PATH, HILLSHADE_HALFOPACITY_FILE_PATH
     )
 
     ########################################
@@ -266,14 +263,14 @@ for WORLDNAME_PATH in world_list:
     file_conversion.multiply_images(
         os.path.abspath(PNG_LANDONLY_FILE_PATH),
         os.path.abspath(HILLSHADE_HALFOPACITY_FILE_PATH),
-        os.path.abspath(PNG_HILLSHADE_BASE_FILE_PATH)
+        os.path.abspath(PNG_HILLSHADE_BASE_FILE_PATH),
     )
     print(f"=== Overlaying hillshade onto colorrelief PNG... {WORLDNAME} ===")
     # overlay hillshade onto colorrelief
     file_conversion.multiply_images(
         os.path.abspath(PNG_COLORRELIEF_FILE_PATH),
         os.path.abspath(HILLSHADE_HALFOPACITY_FILE_PATH),
-        os.path.abspath(PNG_COLORRELIEF_FILE_PATH)
+        os.path.abspath(PNG_COLORRELIEF_FILE_PATH),
     )
     # We're going to skip any compositing of colorrelief here. We'll use that as its own base layer since we're more concerned about elevation representation.
 
@@ -285,15 +282,11 @@ for WORLDNAME_PATH in world_list:
     print(f"=== Compositing PNGs... {WORLDNAME} ===")
     print("Processing colorrelief...")
     file_conversion.composite_images(
-        PNG_COLORRELIEF_FILE_PATH,
-        PNG_NOLAND_FILE_PATH,
-        PNG_COLORRELIEF_FILE_PATH
+        PNG_COLORRELIEF_FILE_PATH, PNG_NOLAND_FILE_PATH, PNG_COLORRELIEF_FILE_PATH
     )
     print("Processing hillshade...")
     file_conversion.composite_images(
-        PNG_HILLSHADE_BASE_FILE_PATH,
-        PNG_NOLAND_FILE_PATH,
-        PNG_TOPORELIEF_FILE_PATH
+        PNG_HILLSHADE_BASE_FILE_PATH, PNG_NOLAND_FILE_PATH, PNG_TOPORELIEF_FILE_PATH
     )
 
     ########################################
@@ -312,9 +305,19 @@ for WORLDNAME_PATH in world_list:
     # generate tilesets
     print(f"=== Generating tilesets... {WORLDNAME} ===")
     # render topo to folder root
-    print("Generating tileset \"topo\" to subfolder...")
+    print('Generating tileset "topo" to subfolder...')
+    zoom_level = 6
+    if WORLD_JSON.get("imageSize", 16384) >= 2048:
+        zoom_level = 5
+    if WORLD_JSON.get("imageSize", 16384) >= 8192:
+        zoom_level = 6
+    if WORLD_JSON.get("imageSize", 16384) >= 16384:
+        zoom_level = 7
+    if WORLD_JSON.get("imageSize", 16384) >= 32768:
+        zoom_level = 8
+
     subprocess.call(
-        f"gdal2tiles.py -p raster --xyz -z 0-8 -w all -r lanczos -t {WORLDNAME}_topo {PNG_TOPO_FILE_PATH} {OUTPUT_FOLDER}",
+        f"gdal2tiles.py -p raster --xyz -z 0-{zoom_level} -w all -r lanczos -t {WORLDNAME}_topo {PNG_TOPO_FILE_PATH} {OUTPUT_FOLDER}",
         shell=True,
     )
     # render dark, topo, and colorrelief to subfolders
@@ -324,9 +327,9 @@ for WORLDNAME_PATH in world_list:
         [PNG_COLORRELIEF_FILE_PATH, "colorRelief"],
     ]:
         image_path, folder_name = outfile
-        print(f"Generating tileset \"{folder_name}\" to subfolder...")
+        print(f'Generating tileset "{folder_name}" to subfolder...')
         subprocess.call(
-            f"gdal2tiles.py -p raster --xyz -z 0-8 -r lanczos -t {WORLDNAME}_{folder_name} {image_path} {os.path.join(OUTPUT_FOLDER, folder_name)}",
+            f"gdal2tiles.py -p raster --xyz -z 0-{zoom_level} -r lanczos -t {WORLDNAME}_{folder_name} {image_path} {os.path.join(OUTPUT_FOLDER, folder_name)}",
             shell=True,
         )
 
@@ -348,7 +351,9 @@ for WORLDNAME_PATH in world_list:
     WORLD_JSON["hasTopoDark"] = True
     WORLD_JSON["hasTopoRelief"] = True
     WORLD_JSON["hasColorRelief"] = True
-    with open(os.path.join(OUTPUT_FOLDER, "map.json"), "w", encoding="utf-8") as outfile:
+    with open(
+        os.path.join(OUTPUT_FOLDER, "map.json"), "w", encoding="utf-8"
+    ) as outfile:
         json.dump(WORLD_JSON, outfile, indent=2)
         outfile.close()
 
@@ -365,13 +370,14 @@ for WORLDNAME_PATH in world_list:
     print("Converting topoRelief to GeoTiff...")
     subprocess.call(
         f"gdal_translate -of GTiff -a_srs EPSG:3857 -a_ullr {terrain_bounds[0][0]} {terrain_bounds[0][1]} {terrain_bounds[2][0]} {terrain_bounds[2][1]} -co COMPRESS=DEFLATE -co TILED=YES {PNG_TOPORELIEF_FILE_PATH} {os.path.join(OUTPUT_FOLDER, f'{WORLDNAME}_topoRelief.tif')}",
-        shell=True,)
+        shell=True,
+    )
     print("Converting colorRelief to GeoTiff...")
     subprocess.call(
         f"gdal_translate -of GTiff -a_srs EPSG:3857 -a_ullr {terrain_bounds[0][0]} {terrain_bounds[0][1]} {terrain_bounds[2][0]} {terrain_bounds[2][1]} -co COMPRESS=DEFLATE -co TILED=YES {PNG_COLORRELIEF_FILE_PATH} {os.path.join(OUTPUT_FOLDER, f'{WORLDNAME}_colorRelief.tif')}",
-        shell=True,)
+        shell=True,
+    )
 
-    
     # # generate a geojson of a 100m grid from 0 to 40km
     # print(f"=== Generating 40x40km geojson grid... {WORLDNAME} ===")
     # geojson_grid = {}
@@ -423,31 +429,26 @@ for WORLDNAME_PATH in world_list:
     # subprocess.call(
     #     f"ogr2ogr -f \"GeoJSON\" -s_srs \"EPSG:3857\" -t_srs \"EPSG:4326\" {os.path.join(OUTPUT_FOLDER, f'{WORLDNAME}_grid.geojson')} {os.path.join(OUTPUT_FOLDER, f'{WORLDNAME}_grid_unprojected.geojson')}",
     #     shell=True,)
-    
-
-
-    
-
 
     # open threads for tiling
     print(f"=== Compressing images... {WORLDNAME} ===")
     for zoom in range(0, MAX_ZOOM + 1):
         print(f"Starting threads for compressing zoom level {zoom}...")
         topo_compression = Thread(
-          target=compress.compress_images_in_folder,
-          args=(os.path.join(OUTPUT_FOLDER, str(zoom)),)
+            target=compress.compress_images_in_folder,
+            args=(os.path.join(OUTPUT_FOLDER, str(zoom)),),
         )
         topoDark_compression = Thread(
-          target=compress.compress_images_in_folder,
-          args=(os.path.join(OUTPUT_FOLDER, "topoDark", str(zoom)),)
+            target=compress.compress_images_in_folder,
+            args=(os.path.join(OUTPUT_FOLDER, "topoDark", str(zoom)),),
         )
         topoRelief_compression = Thread(
-          target=compress.compress_images_in_folder,
-          args=(os.path.join(OUTPUT_FOLDER, "topoRelief", str(zoom)),)
+            target=compress.compress_images_in_folder,
+            args=(os.path.join(OUTPUT_FOLDER, "topoRelief", str(zoom)),),
         )
         colorRelief_compression = Thread(
-          target=compress.compress_images_in_folder,
-          args=(os.path.join(OUTPUT_FOLDER, "colorRelief", str(zoom)),)
+            target=compress.compress_images_in_folder,
+            args=(os.path.join(OUTPUT_FOLDER, "colorRelief", str(zoom)),),
         )
         topo_compression.start()
         topoDark_compression.start()
@@ -462,11 +463,7 @@ for WORLDNAME_PATH in world_list:
         colorRelief_compression.join()
         print(f"ColorRelief compression finished (z{zoom}/{MAX_ZOOM}) (process 4/4)")
 
-
-    
-
     print("=== Completed tasks for", WORLDNAME, "===")
-
 
 
 print("Completed all tasks!")
