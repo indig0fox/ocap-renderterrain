@@ -308,10 +308,14 @@ for WORLDNAME_PATH in world_list:
     print('Generating tileset "topo" to subfolder...')
     zoom_level = 6
     if WORLD_JSON.get("imageSize", 16384) >= 2048:
+        zoom_level = 3
+    if WORLD_JSON.get("imageSize", 16384) >= 2560:
+        zoom_level = 4
+    if WORLD_JSON.get("imageSize", 16384) >= 5120:
         zoom_level = 5
-    if WORLD_JSON.get("imageSize", 16384) >= 8192:
+    if WORLD_JSON.get("imageSize", 16384) >= 10240:
         zoom_level = 6
-    if WORLD_JSON.get("imageSize", 16384) >= 16384:
+    if WORLD_JSON.get("imageSize", 16384) >= 16400:
         zoom_level = 7
     if WORLD_JSON.get("imageSize", 16384) >= 32768:
         zoom_level = 8
