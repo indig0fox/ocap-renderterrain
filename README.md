@@ -169,6 +169,12 @@ The output data will be saved to the `output` directory of this project. The out
 
 This folder can be installed directly to the local /maps folder of an OCAP2 instance. Please also provide this data to [indigo@indigofox.dev](mailto:indigo@indigofox.dev) or on the OCAP2 Discord server so that it can be hosted for others to stream.
 
+## Push
+
+    ```docker
+    docker push indifox926/ocap-rendermap:latest
+    ```
+
 ## Credits
 
 - Foundation of heightmap export script to XYZ geo-format by [Beowulf Strategic Operations](https://beowulfso.com/)
