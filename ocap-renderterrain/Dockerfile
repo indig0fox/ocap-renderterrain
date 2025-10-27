@@ -40,7 +40,7 @@ RUN pip install shapely==1.7.1
 RUN pip install -r ./requirements.txt
 
 # Remove policy limits on ImageMagick
-COPY ./im-policy.xml /etc/ImageMagick-6/policy.xml
+COPY ./im-policy.xml /etc/ImageMagick-7/policy.xml
 
 # Copy everything in resources folder to /app
 COPY ./modules ./modules
