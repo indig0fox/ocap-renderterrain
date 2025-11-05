@@ -351,7 +351,7 @@ def convert_png_to_24bit(in_file, out_file):
     print("Converting PNG to 24-bit...")
 
     ret_code = subprocess.call(
-        f"convert {in_file} -alpha off {out_file}",
+        f"magick {in_file} -alpha off {out_file}",
         shell=True,
     )
     if ret_code != 0:
@@ -369,7 +369,7 @@ def generate_heightmap(in_file, out_file, export_size):
     )
     # resize to export_size
     subprocess.call(
-        f"convert {out_file} -resize {export_size}x{export_size} {out_file}",
+        f"magick {out_file} -resize {export_size}x{export_size} {out_file}",
         shell=True,
     )
 
@@ -385,7 +385,7 @@ def generate_colorrelief(in_file, out_file, export_size):
     )
     # resize to export_size
     subprocess.call(
-        f"convert {out_file} -resize {export_size}x{export_size} {out_file}",
+        f"magick {out_file} -resize {export_size}x{export_size} {out_file}",
         shell=True,
     )
 
@@ -393,7 +393,7 @@ def generate_colorrelief(in_file, out_file, export_size):
 def set_half_opacity(in_file, out_file):
     """Set image to half opacity"""
     subprocess.call(
-        f"convert {in_file} -alpha set -channel a -evaluate set 50% -limit area 0 {out_file}",
+        f"magick {in_file} -alpha set -channel a -evaluate set 50% -limit area 0 {out_file}",
         shell=True,
     )
 
@@ -402,7 +402,7 @@ def composite_images(in_file, overlay_file, out_file):
     """Composite two PNGs"""
     # overlay filter
     subprocess.call(
-        f"convert {in_file} {overlay_file} -composite {out_file}",
+        f"magick {in_file} {overlay_file} -composite {out_file}",
         shell=True,
     )
 
@@ -411,7 +411,7 @@ def overlay_images(in_file, overlay_file, out_file):
     """Overlay two PNGs"""
     # overlay filter
     subprocess.call(
-        f"convert {in_file} {overlay_file} -compose overlay -composite {out_file}",
+        f"magick {in_file} {overlay_file} -compose overlay -composite {out_file}",
         shell=True,
     )
 
@@ -420,6 +420,6 @@ def multiply_images(in_file, overlay_file, out_file):
     """Multiply two PNGs"""
     # multiply filter
     subprocess.call(
-        f"convert {in_file} {overlay_file} -limit area 500m -compose multiply -composite {out_file}",
+        f"magick {in_file} {overlay_file} -limit area 500m -compose multiply -composite {out_file}",
         shell=True,
     )
